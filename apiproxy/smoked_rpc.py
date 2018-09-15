@@ -1,5 +1,7 @@
 import eventlet
 import json
+
+import config
 websocket = eventlet.import_patched('websocket')
 import websocket
 from cooltools import *
@@ -14,28 +16,27 @@ def smoked_rpc_func(url,method,request_api=None):
               req = json.dumps({'id':1,'method':method,'params':params,'jsonrpc':'2.0'})
               ws.send(req)
               resp = ws.recv()
+              print(resp)
               retval = json.loads(resp)['result']
            else:
-              ws.send(json.dumps({"id":1,"method":"call","params":[1,"login",["",""]]}))
-              ws.recv()
-              ws.send(json.dumps({"id":2,"method":"call","params":[1,"get_api_by_name",[request_api]]}))
-              retval = json.loads(ws.recv())
-              req = json.dumps({"id":3,"method":"call","params":[retval['result'],"broadcast_transaction",params]})
+              req = json.dumps({"id":3,"method":"call","params":[request_api,method,params],'jsonrpc':'2.0'})
               ws.send(req)
               resp = ws.recv()
+              print(resp)
               retval = json.loads(resp)['result']
            ws.shutdown()
            return retval
     return rpc_func()
 
-smoked_rpc_url   = 'ws://127.0.0.1:8090'
-get_smoke_categories                = smoked_rpc_func(smoked_rpc_url,'get_trending_categories')
-get_trending_tags                   = single_field(with_args(get_smoke_categories,[None,10]),"name")
+smoked_rpc_url   = config.smoked_urls[0]
+
+get_trending_tags                   = smoked_rpc_func(smoked_rpc_url,'get_trending_tags', request_api='tags_api')
 get_smoke_config                    = memcached(smoked_rpc_func(smoked_rpc_url,'get_config'))
 get_smoke_dynamic_global_properties = smoked_rpc_func(smoked_rpc_url,'get_dynamic_global_properties')
 get_user_data                       = listify(smoked_rpc_func(smoked_rpc_url,'lookup_account_names'))
 get_user_post                       = memcached(smoked_rpc_func(smoked_rpc_url,'get_content'))
-get_witness_data                    = with_args(smoked_rpc_func(smoked_rpc_url,'get_witness_by_account'),['charlieshrem'])
+get_witnesses			    = smoked_rpc_func(smoked_rpc_url,'get_active_witnesses')
+get_witness_data                    = smoked_rpc_func(smoked_rpc_url,'get_witness_by_account')
 get_discussions_before_date         = smoked_rpc_func(smoked_rpc_url,'get_discussions_by_author_before_date')
 get_network_data                    = joined(get_smoke_config,get_smoke_dynamic_global_properties)
 get_smoke_data                      = multifunc(witness=get_witness_data,network=get_network_data)
