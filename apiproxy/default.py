@@ -1,7 +1,13 @@
 from sanic import Sanic
 from sanic import response
 
+import sexpdata
+from sexpdata import car,cdr,Symbol
+
+from cooltools import with_multi_args
+
 from time import strftime, gmtime
+
 
 import smoked_rpc
 
@@ -9,17 +15,76 @@ proxy_app = Sanic()
 
 import config
 
+
+# lisp magic
+# literally - all software is magic, because it causes change in reality in accordance with will
+data_file = open('data.lisp')
+data_model = sexpdata.load(data_file)
+data_file.close()
+
+def dictalise(sexp):
+    """ Turn a deserialised s-expression into a python dict
+    """
+    retval = {}
+    for entry in cdr(sexp):
+        if len(cdr(entry)) > 1:
+           retval[car(entry).value()] = cdr(entry)
+        else:
+           retval[car(entry).value()] = car(cdr(entry))
+    return retval
+
+def gen_entity_multi_handler(entity_dict):
+    defargs = []
+    has_count = False
+    rpc_method_name = car(entity_dict['rpc_method']).value()
+    for arg in car(cdr(entity_dict['rpc_method'])):
+        if type(arg) is sexpdata.Symbol:
+           if arg.value() == '!count':
+              has_count = True
+           else:
+              defargs.append(arg.value())
+        else:
+          defargs.append(arg)
+    rpc_method = with_multi_args(getattr(smoked_rpc,rpc_method_name),defargs)
+    max_count  = entity_dict['max_datums']
+    def handler_with_count(request):
+        if 'count' in request.raw_args.keys():
+           count = int(request.raw_args['count'])
+           if count > max_count: count=max_count
+        else:
+           count = max_count
+        resp = rpc_method(count)
+        return response.json(resp)
+    def handler_without_count(request):
+        resp = rpc_method()
+        return response.json(resp)
+    if has_count:
+       return handler_with_count
+    else:
+       return handler_without_count
+
+def add_entity(sanic_app,entity_name,entity_dict):
+    sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
+
+for entity in data_model:
+    add_entity(proxy_app,car(entity).value(),dictalise(entity))
+
 @proxy_app.route('/trending')
 async def get_trending(request):
       return response.json(smoked_rpc.get_trending_tags('',100))
 
-@proxy_app.route('/blocks')
+#@proxy_app.route('/blocks')
 async def get_recent_blocks(request):
-      pass
+      retval = []
+      # TODO - make this stream instead of returning 10 blocks at a time immediately
+      last_block = smoked_rpc.get_network_data()['last_irreversible_block_num']
+      for block_num in range(last_block,last_block-10,-1):
+          retval.append(smoked_rpc.get_smoke_block(int(block_num)))
+      return response.json(retval)
 
 @proxy_app.route('/blocks/<block_num>')
 async def get_block(request,block_num):
-      pass
+      return response.json(smoked_rpc.get_smoke_block(int(block_num)))
 
 @proxy_app.route('/witnesses')
 async def get_witnesses_list(request):

@@ -57,6 +57,12 @@ def with_args(func,args):
            return func(*args)
     return new_func()
 
+def with_multi_args(func,defargs):
+    class new_func:
+       def __call__(self,*args):
+           return func(*(defargs+list(args)))
+    return new_func()
+
 def joined(*funcs):
     class new_func_dict:
        def __call__(self):
