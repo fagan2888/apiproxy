@@ -33,6 +33,8 @@ def dictalise(sexp):
            retval[car(entry).value()] = car(cdr(entry))
     return retval
 
+# TODO - switch from rpc method to some more generic method for data source
+
 def gen_entity_multi_handler(entity_dict):
     defargs = []
     has_count = False
@@ -69,27 +71,6 @@ def add_entity(sanic_app,entity_name,entity_dict):
 for entity in data_model:
     add_entity(proxy_app,car(entity).value(),dictalise(entity))
 
-@proxy_app.route('/trending')
-async def get_trending(request):
-      return response.json(smoked_rpc.get_trending_tags('',100))
-
-#@proxy_app.route('/blocks')
-async def get_recent_blocks(request):
-      retval = []
-      # TODO - make this stream instead of returning 10 blocks at a time immediately
-      last_block = smoked_rpc.get_network_data()['last_irreversible_block_num']
-      for block_num in range(last_block,last_block-10,-1):
-          retval.append(smoked_rpc.get_smoke_block(int(block_num)))
-      return response.json(retval)
-
-@proxy_app.route('/blocks/<block_num>')
-async def get_block(request,block_num):
-      return response.json(smoked_rpc.get_smoke_block(int(block_num)))
-
-@proxy_app.route('/witnesses')
-async def get_witnesses_list(request):
-      witnesses = smoked_rpc.get_witnesses('0',100)
-      return response.json(witnesses)
 
 @proxy_app.route('/witness/<witness_name>')
 async def get_witness(request,witness_name):

@@ -1,1 +1,1 @@
-smoked_urls = ['wss://testnet.smoke.io/wss','http://localhost:8090']
+smoked_urls = ['ws://localhost:8090']
