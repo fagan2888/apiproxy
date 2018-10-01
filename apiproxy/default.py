@@ -65,8 +65,33 @@ def gen_entity_multi_handler(entity_dict):
     else:
        return handler_without_count
 
+def gen_entity_single_handler(entity_dict):
+    defargs = []
+    has_id = False
+    rpc_method_name = car(entity_dict['rpc_method']).value()
+    for arg in car(cdr(entity_dict['rpc_method'])):
+        if type(arg) is sexpdata.Symbol:
+           if arg.value() == '!id':
+              has_id = True
+           else:
+              defargs.append(arg.value())
+        else:
+           defargs.append(arg)
+    rpc_method = with_multi_args(getattr(smoked_rpc,rpc_method_name),defargs)
+    def handler_with_id(request,unique_id):
+        resp = rpc_method(unique_id)
+        return response.json(resp)
+    def handler_without_id(request):
+        resp = rpc_method()
+        return response.json(resp)
+    if has_id: return handler_with_id
+    return handler_without_id
+
 def add_entity(sanic_app,entity_name,entity_dict):
-    sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
+    if 'max_datums' in entity_dict.keys():
+       sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
+    else:
+       sanic_app.add_route(gen_entity_single_handler(entity_dict),''.join(('/',entity_name, '<%s>' % entity_dict['unique_id'])))
 
 for entity in data_model:
     add_entity(proxy_app,car(entity).value(),dictalise(entity))

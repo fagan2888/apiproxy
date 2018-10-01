@@ -17,10 +17,15 @@
         (unique_id block_id)
         (rpc_method get_smoke_block (!count)))
 
-(witnesses (description "Witness data")
+(witnesses (description "List of witnesses")
            (update_frequency 240)
            (max_datums 20)
            (unique_id name)
            (rpc_method get_witnesses ("0" !count)))
+
+(witness (description "Witness data")
+         (update_frequency 240)
+         (unique_id name)
+         (rpc_method get_witness_data (!id)))
 
 )
