@@ -78,8 +78,8 @@ def gen_entity_single_handler(entity_dict):
         else:
            defargs.append(arg)
     rpc_method = with_multi_args(getattr(smoked_rpc,rpc_method_name),defargs)
-    def handler_with_id(request,unique_id):
-        resp = rpc_method(unique_id)
+    def handler_with_id(request,name):
+        resp = rpc_method(name)
         return response.json(resp)
     def handler_without_id(request):
         resp = rpc_method()
@@ -87,31 +87,40 @@ def gen_entity_single_handler(entity_dict):
     if has_id: return handler_with_id
     return handler_without_id
 
+custom_handlers = {}
+
+def get_blog_posts(request,name):
+    count = 10
+    if request.raw_args.has_key('count'):
+       count = request.raw_args['count']
+       if count > 10: count = 10
+    retval = []
+    for p in smoked_rpc.get_discussions_before_date(username,"",strftime('%Y-%m-%dT%H:%M:%S',gmtime()),"10"):
+        retval.append({'permlink':p['permlink'],'id':p['id']})
+    return response.json(retval)
+
+custom_handlers['get_blog_posts'] = get_blog_posts
+
 def add_entity(sanic_app,entity_name,entity_dict):
+    if 'custom_handler' in entity_dict.keys():
+       if 'unique_id' in entity_dict.keys():
+          sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name,'/','<%s>' % entity_dict['unique_id'].value())))
+       else:
+          sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name)))
+       return
     if 'max_datums' in entity_dict.keys():
        sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
     else:
-       sanic_app.add_route(gen_entity_single_handler(entity_dict),''.join(('/',entity_name, '<%s>' % entity_dict['unique_id'])))
+       sanic_app.add_route(gen_entity_single_handler(entity_dict),''.join(('/',entity_name, '/<%s>' % entity_dict['unique_id'].value())))
 
 for entity in data_model:
     add_entity(proxy_app,car(entity).value(),dictalise(entity))
 
 
-@proxy_app.route('/witness/<witness_name>')
-async def get_witness(request,witness_name):
-      witness_data = smoked_rpc.get_witness_data(witness_name)
-      return response.json(witness_data)
-
-def get_blog_posts(username):
-    retval = []
-    for p in smoked_rpc.get_discussions_before_date(username,"",strftime('%Y-%m-%dT%H:%M:%S',gmtime()),"10"):
-        retval.append({'permlink':p['permlink'],'id':p['id']})
-    return retval
-
-@proxy_app.route('/blog/<username>')
-async def get_blog(request,username):
-      posts = get_blog_posts(username)
-      return response.json(posts)
+#@proxy_app.route('/witness/<witness_name>')
+#async def get_witness(request,witness_name):
+#      witness_data = smoked_rpc.get_witness_data(witness_name)
+#      return response.json(witness_data)
 
 @proxy_app.route('/post/<author>/<post>')
 async def get_post(request,author,post):

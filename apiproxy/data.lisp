@@ -8,19 +8,16 @@
 (trending_tags (description "The currently trending tags at time of call")
                (update_frequency 240)
                (max_datums 10)
-               (unique_id name)
                (rpc_method get_trending_tags ("" !count)))
 
 (blocks (description "Raw blockchain data")
         (update_frequency -1)
         (max_datums 10)
-        (unique_id block_id)
         (rpc_method get_smoke_block (!count)))
 
 (witnesses (description "List of witnesses")
            (update_frequency 240)
            (max_datums 20)
-           (unique_id name)
            (rpc_method get_witnesses ("0" !count)))
 
 (witness (description "Witness data")
@@ -28,4 +25,10 @@
          (unique_id name)
          (rpc_method get_witness_data (!id)))
 
+(posts (description "Get a list of posts for a specific user")
+       (update_frequency 240)
+       (max_datums 10)
+       (unique_id name)
+       (single_field permlink)
+       (custom_handler get_blog_posts))
 )
