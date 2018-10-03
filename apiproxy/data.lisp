@@ -31,4 +31,9 @@
        (unique_id name)
        (single_field permlink)
        (custom_handler get_blog_posts))
+
+(network (description "Network data")
+         (update_frequency 240)
+         (max_datums 1)
+         (rpc_method get_network_data ()))
 )

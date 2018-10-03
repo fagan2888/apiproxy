@@ -126,9 +126,9 @@ for entity in data_model:
 async def get_post(request,author,post):
       pass
 
-@proxy_app.route('/network')
-async def get_network_data(request):
-      return response.json(smoked_rpc.get_network_data())
+#@proxy_app.route('/network')
+#async def get_network_data(request):
+#      return response.json(smoked_rpc.get_network_data())
 
 @proxy_app.route('/')
 async def smoked(request):
