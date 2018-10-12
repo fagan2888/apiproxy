@@ -25,12 +25,22 @@
          (unique_id name)
          (rpc_method get_witness_data (!id)))
 
+(account (description "Account data")
+         (update_frequency 60)
+         (unique_id name)
+         (rpc_method get_user_data (!id)))
+
 (posts (description "Get a list of posts for a specific user")
        (update_frequency 240)
        (max_datums 10)
        (unique_id name)
        (single_field permlink)
        (custom_handler get_blog_posts))
+
+;(post (description "Get an individual post")
+;      (update_frequency 240)
+;      (unique_ids (username post))
+;      (rpc_method get_user_post))
 
 (network (description "Network data")
          (update_frequency 240)

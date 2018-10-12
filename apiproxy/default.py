@@ -87,6 +87,11 @@ def gen_entity_single_handler(entity_dict):
     if has_id: return handler_with_id
     return handler_without_id
 
+def gen_entity_single_handler_multi_ids(entity_dict):
+    defargs = []
+    rpc_method_name = car(entity_dict['rpc_method']).value()
+
+
 custom_handlers = {}
 
 def get_blog_posts(request,name):
@@ -108,6 +113,9 @@ def add_entity(sanic_app,entity_name,entity_dict):
        else:
           sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name)))
        return
+    if 'unique_ids' in entity_dict.keys():
+       sanic_app.add_route(gen_entity_single_handler_multi_ids(entity_dict), ''.join('/',entity_name, '/'.join(map(lambda x: '<%s>' % x.value(), entity_dict['unique_ids']))))
+       return
     if 'max_datums' in entity_dict.keys():
        sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
     else:
@@ -116,19 +124,25 @@ def add_entity(sanic_app,entity_name,entity_dict):
 for entity in data_model:
     add_entity(proxy_app,car(entity).value(),dictalise(entity))
 
+#@proxy_app.route('/post/<author>/<post>')
+#async def get_post(request,author,post):
+#      pass
 
-#@proxy_app.route('/witness/<witness_name>')
-#async def get_witness(request,witness_name):
-#      witness_data = smoked_rpc.get_witness_data(witness_name)
-#      return response.json(witness_data)
+from decimal import *
+getcontext().prec = 10
+@proxy_app.route('/misc/chain_info')
+async def chain_info(request):
+      dgp = smoked_rpc.get_smoke_dynamic_global_properties()
+      total_supply = Decimal(dgp['current_supply'].split(' ')[0])
+      smoke_data   = smoked_rpc.get_user_data('smoke')
+      reserve_data = smoked_rpc.get_user_data('reserve')
 
-@proxy_app.route('/post/<author>/<post>')
-async def get_post(request,author,post):
-      pass
+      smoke_balance   = Decimal(smoke_data['balance'].split(' ')[0])
+      reserve_balance = Decimal(reserve_data['balance'].split(' ')[0])
 
-#@proxy_app.route('/network')
-#async def get_network_data(request):
-#      return response.json(smoked_rpc.get_network_data())
+      circulating_supply = total_supply - smoke_balance - reserve_balance
+
+      return response.json({"total_supply":total_supply,"circulating_supply":circulating_supply,"smoke_balance":smoke_balance,"reserve_balance":reserve_balance})
 
 @proxy_app.route('/')
 async def smoked(request):
