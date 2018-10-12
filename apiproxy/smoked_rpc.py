@@ -38,7 +38,7 @@ get_user_post                       = memcached(smoked_rpc_func(smoked_rpc_url,'
 get_witnesses			    = smoked_rpc_func(smoked_rpc_url,'get_active_witnesses')
 get_witness_data                    = smoked_rpc_func(smoked_rpc_url,'get_witness_by_account')
 get_discussions_before_date         = smoked_rpc_func(smoked_rpc_url,'get_discussions_by_author_before_date')
-get_network_data                    = joined(get_smoke_config,get_smoke_dynamic_global_properties)
+get_network_data                    = memcached(joined(get_smoke_config,get_smoke_dynamic_global_properties))
 get_smoke_data                      = multifunc(witness=get_witness_data,network=get_network_data)
 get_smoke_block                     = memcached(smoked_rpc_func(smoked_rpc_url,'get_block'))
 get_account_history                 = smoked_rpc_func(smoked_rpc_url,"get_account_history")

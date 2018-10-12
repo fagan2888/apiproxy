@@ -4,6 +4,7 @@ from sanic import response
 import sexpdata
 from sexpdata import car,cdr,Symbol
 
+from cooltools import memcached
 from cooltools import with_multi_args
 
 from time import strftime, gmtime
@@ -94,15 +95,22 @@ def gen_entity_single_handler_multi_ids(entity_dict):
 
 custom_handlers = {}
 
+def _get_blog_posts_cached(username,count):
+    if count>10: count=10
+    retval = []
+    for p in smoked_rpc.get_discussions_before_date(username,"",strftime('%Y-%m-%dT%H:%M:%S',gmtime()),str(count)):
+        retval.append({'permlink':p['permlink'],'id':p['id']})
+    return retval
+
+get_blog_posts_cached = memcached(_get_blog_posts_cached)
+
 def get_blog_posts(request,name):
+
     count = 10
     if request.raw_args.has_key('count'):
        count = request.raw_args['count']
-       if count > 10: count = 10
-    retval = []
-    for p in smoked_rpc.get_discussions_before_date(username,"",strftime('%Y-%m-%dT%H:%M:%S',gmtime()),"10"):
-        retval.append({'permlink':p['permlink'],'id':p['id']})
-    return response.json(retval)
+    username = name
+    return response.json(get_blog_posts_cached(username,count))
 
 custom_handlers['get_blog_posts'] = get_blog_posts
 
