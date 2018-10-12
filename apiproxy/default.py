@@ -107,7 +107,7 @@ get_blog_posts_cached = memcached(_get_blog_posts_cached)
 def get_blog_posts(request,name):
 
     count = 10
-    if request.raw_args.has_key('count'):
+    if 'count' in request.raw_args.keys():
        count = request.raw_args['count']
     username = name
     return response.json(get_blog_posts_cached(username,count))
