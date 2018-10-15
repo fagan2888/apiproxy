@@ -13,7 +13,12 @@
 (blocks (description "Raw blockchain data")
         (update_frequency -1)
         (max_datums 10)
-        (rpc_method get_smoke_block (!count)))
+	(custom_handler get_recent_blocks))
+
+(block (description "Raw blockchain data")
+       (update_frequency -1)
+       (unique_id name)
+       (rpc_method get_smoke_block (!id)))
 
 (witnesses (description "List of witnesses")
            (update_frequency 240)

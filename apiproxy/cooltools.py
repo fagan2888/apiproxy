@@ -27,13 +27,13 @@ def single_field(func,field):
            return retval
     return new_func()
 
-def memcached(func):
+def memcached(func,timeout=240):
     class new_func:
        def __call__(self,*args):
            retval = mc.get(str(hash(func))+str(hash(args)))
            if not retval:
               retval = func(*args)
-              mc.set(str(hash(func))+str(hash(args)),json.dumps(retval),time=240)
+              mc.set(str(hash(func))+str(hash(args)),json.dumps(retval),time=timeout)
            else:
               retval = json.loads(retval)
            return retval

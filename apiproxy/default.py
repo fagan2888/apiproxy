@@ -108,16 +108,39 @@ def get_blog_posts(request,name):
 
     count = 10
     if 'count' in request.raw_args.keys():
-       count = request.raw_args['count']
+       count = int(request.raw_args['count'])
     username = name
     return response.json(get_blog_posts_cached(username,count))
 
-custom_handlers['get_blog_posts'] = get_blog_posts
+def get_head_block_num():
+    network_data = smoked_rpc.get_smoke_dynamic_global_properties()
+    return network_data['head_block_number']
+
+def _get_recent_blocks_cached(count):
+    if count>10: count=10
+    headblock = get_head_block_num()
+    retval = []
+    for block_num in range(headblock-count,headblock):
+        block_data = smoked_rpc.get_smoke_block(block_num)
+        retval.append(block_data)
+    return retval
+
+get_recent_blocks_cached = memcached(_get_recent_blocks_cached,timeout=2)
+
+def get_recent_blocks(request):
+    count = 10
+    if 'count' in request.raw_args.keys():
+       count = int(request.raw_args['count'])
+    return response.json(get_recent_blocks_cached(count))
+
+custom_handlers['get_blog_posts']    = get_blog_posts
+custom_handlers['get_recent_blocks'] = get_recent_blocks
+
 
 def add_entity(sanic_app,entity_name,entity_dict):
     if 'custom_handler' in entity_dict.keys():
        if 'unique_id' in entity_dict.keys():
-          sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name,'/','<%s>' % entity_dict['unique_id'].value())))
+          sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name,'/','<name>' )))
        else:
           sanic_app.add_route(custom_handlers[entity_dict['custom_handler'].value()],''.join(('/',entity_name)))
        return
@@ -127,7 +150,7 @@ def add_entity(sanic_app,entity_name,entity_dict):
     if 'max_datums' in entity_dict.keys():
        sanic_app.add_route(gen_entity_multi_handler(entity_dict),''.join(('/',entity_name)))
     else:
-       sanic_app.add_route(gen_entity_single_handler(entity_dict),''.join(('/',entity_name, '/<%s>' % entity_dict['unique_id'].value())))
+       sanic_app.add_route(gen_entity_single_handler(entity_dict),''.join(('/',entity_name, '/<name>')))
 
 for entity in data_model:
     add_entity(proxy_app,car(entity).value(),dictalise(entity))
