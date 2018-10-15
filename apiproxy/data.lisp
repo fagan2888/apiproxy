@@ -17,7 +17,7 @@
 
 (witnesses (description "List of witnesses")
            (update_frequency 240)
-           (max_datums 20)
+           (max_datums 100)
            (rpc_method get_witnesses ("0" !count)))
 
 (witness (description "Witness data")
